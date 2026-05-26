@@ -1,0 +1,98 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dms-postgres
+    environment:
+      POSTGRES_USER: dms_user
+      POSTGRES_PASSWORD: dms_password
+      POSTGRES_DB: dms_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dms_user -d dms_db"]
+      interval: 5s
+      retries: 5
+
+  gateway:
+    build: ./gateway
+    container_name: dms-gateway
+    ports:
+      - "3000:3000"
+    depends_on:
+      auth-service:
+        condition: service_started
+      document-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+
+  auth-service:
+    build: ./services/auth-service
+    container_name: dms-auth
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: dms_user
+      DB_PASSWORD: dms_password
+      DB_NAME: dms_db
+      PORT: 3001
+
+  document-service:
+    build: ./services/document-service
+    container_name: dms-document
+    ports:
+      - "3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: dms_user
+      DB_PASSWORD: dms_password
+      DB_NAME: dms_db
+      PORT: 3002
+
+  user-service:
+    build: ./services/user-service
+    container_name: dms-user
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: dms_user
+      DB_PASSWORD: dms_password
+      DB_NAME: dms_db
+      PORT: 3003
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: dms-notification
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: dms_user
+      DB_PASSWORD: dms_password
+      DB_NAME: dms_db
+      PORT: 3004
+
+volumes:
+  pgdata:
