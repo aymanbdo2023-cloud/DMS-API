@@ -1,25 +1,16 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: dms-postgres
-    environment:
-      POSTGRES_USER: dms_user
-      POSTGRES_PASSWORD: dms_password
-      POSTGRES_DB: dms_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dms_user -d dms_db"]
-      interval: 5s
-      retries: 5
-
   gateway:
     build: ./gateway
     container_name: dms-gateway
     ports:
       - "3000:3000"
+    env_file: ./.env
+    environment:
+      USER_AUTH_URL: http://auth-service:3001
+    volumes:
+      - ./gateway:/app
+      - /app/node_modules
+    command: npx nodemon --legacy-watch index.js
     depends_on:
       auth-service:
         condition: service_started
@@ -35,64 +26,41 @@ services:
     container_name: dms-auth
     ports:
       - "3001:3001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: dms_user
-      DB_PASSWORD: dms_password
-      DB_NAME: dms_db
-      PORT: 3001
+    env_file: ./.env
+    volumes:
+      - ./services/auth-service:/app
+      - /app/node_modules
+    command: npx nodemon --legacy-watch user-auth.js
 
   document-service:
     build: ./services/document-service
     container_name: dms-document
     ports:
       - "3002:3002"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: dms_user
-      DB_PASSWORD: dms_password
-      DB_NAME: dms_db
-      PORT: 3002
+    env_file: ./.env
+    volumes:
+      - ./services/document-service:/app
+      - /app/node_modules
+    command: npx nodemon --legacy-watch index.js
 
   user-service:
     build: ./services/user-service
     container_name: dms-user
     ports:
       - "3003:3003"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: dms_user
-      DB_PASSWORD: dms_password
-      DB_NAME: dms_db
-      PORT: 3003
+    env_file: ./.env
+    volumes:
+      - ./services/user-service:/app
+      - /app/node_modules
+    command: npx nodemon --legacy-watch index.js
 
   notification-service:
     build: ./services/notification-service
     container_name: dms-notification
     ports:
       - "3004:3004"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: dms_user
-      DB_PASSWORD: dms_password
-      DB_NAME: dms_db
-      PORT: 3004
-
-volumes:
-  pgdata:
+    env_file: ./.env
+    volumes:
+      - ./services/notification-service:/app
+      - /app/node_modules
+    command: npx nodemon --legacy-watch index.js

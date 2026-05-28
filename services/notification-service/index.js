@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const { Pool } = require("pg");
 
 const app = express();
@@ -12,6 +13,7 @@ const pool = new Pool({
   database: process.env.DB_NAME || "dms_db",
 });
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/health", async (req, res) => {
