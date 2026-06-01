@@ -8,21 +8,15 @@ const PORT = process.env.APP_PORT;
 const API_KEY = process.env.API_KEY;
 
 const USER_AUTH_URL = process.env.USER_AUTH_URL;
+const DOCUMENT_SERVICE_URL =
+  process.env.DOCUMENT_SERVICE_URL || "http://document-service:3002";
+const NOTIFICATION_SERVICE_URL =
+  process.env.NOTIFICATION_SERVICE_URL || "http://notification-service:3004";
 
 const loggingMiddleware = (req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 };
-
-// const apiKeyMiddleware = (req, res, next) => {
-//   const key = req.headers["api-key"];
-//   if (!key || key != API_KEY) {
-//     return res
-//       .status(401)
-//       .json({ error: "Unauthorized: missing or invalid API key" });
-//   }
-//   next();
-// };
 
 // Middlewares
 app.use(loggingMiddleware);
@@ -34,6 +28,22 @@ app.use(
     target: USER_AUTH_URL,
     changeOrigin: true,
     pathFilter: "/auth",
+  }),
+);
+
+app.use(
+  createProxyMiddleware({
+    target: DOCUMENT_SERVICE_URL,
+    changeOrigin: true,
+    pathFilter: ["/upload", "/inbox", "/download", "/health"],
+  }),
+);
+
+app.use(
+  createProxyMiddleware({
+    target: NOTIFICATION_SERVICE_URL,
+    changeOrigin: true,
+    pathFilter: "/notifications",
   }),
 );
 
